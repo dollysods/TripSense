@@ -1,0 +1,14 @@
+{
+  "dataVersion": "2026-06-09",
+  "pairs": 600,
+  "provenance": {
+    "train": {
+      "file": "train_times.json",
+      "pairsWithData": 386
+    },
+    "plane": {
+      "file": "flight_times.json",
+      "pairsWithData": 558
+    }
+  }
+}
