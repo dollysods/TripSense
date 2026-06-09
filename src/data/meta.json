@@ -9,6 +9,14 @@
     "plane": {
       "file": "flight_times.json",
       "pairsWithData": 558
+    },
+    "bus": {
+      "file": "bus_times.json",
+      "pairsWithData": 342
+    },
+    "car": {
+      "file": "car_times.json",
+      "pairsWithData": 454
     }
   }
 }
