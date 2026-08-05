@@ -8,7 +8,15 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import type { CitiesDatabase, CityPairsDatabase, Leg, Stop, TransportMode } from '../types';
 import { TRANSPORT_MODES } from '../types';
-import { MODE_OVERHEAD_MIN, bestVia, formatMin, lookupTimeMin, viaLegMin } from '../lib/calc';
+import {
+  MODE_OVERHEAD_MIN,
+  bestVia,
+  formatMin,
+  isPlaced,
+  lookupTimeMin,
+  stopDisplayName,
+  viaLegMin,
+} from '../lib/calc';
 import CityAutocomplete from './CityAutocomplete';
 import TransportModeSelector, { MODE_META } from './TransportModeSelector';
 
@@ -21,14 +29,30 @@ interface Props {
   onLegsChange: (legs: Leg[]) => void;
 }
 
+/** Round trips longer than this get a "consider staying overnight" nudge. */
+const LONG_ROUND_TRIP_MIN = 600;
+
+/** Nearest stop before index i that isn't a day trip — where the
+ *  traveler actually departs from for the leg into stops[i]. */
+function effectiveOrigin(stops: Stop[], i: number): Stop | undefined {
+  for (let j = i - 1; j >= 0; j--) {
+    if (stops[j].kind !== 'daytrip') return stops[j];
+  }
+  return stops[i - 1];
+}
+
 function SortableStopRow(props: {
   stop: Stop;
   index: number;
   count: number;
   cities: CitiesDatabase;
   usedCityIds: Set<string>;
-  onCity: (cityId: string | null) => void;
+  baseName: string | null;
+  daytripIssue: string | null;
+  onCity: (cityId: string | null, customName?: string) => void;
   onNights: (nights: number) => void;
+  onKind: (kind: 'stay' | 'daytrip') => void;
+  onOnSiteHours: (hours: number | undefined) => void;
   onRemove: () => void;
   onMove: (dir: -1 | 1) => void;
 }) {
@@ -36,11 +60,17 @@ function SortableStopRow(props: {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: stop.id });
 
+  const isDaytrip = stop.kind === 'daytrip';
+  // A day trip needs a base before it and shouldn't end the trip.
+  const toggleDisabled = !isDaytrip && (index === 0 || index === count - 1);
+
   return (
     <div
       ref={setNodeRef}
       style={{ transform: CSS.Transform.toString(transform), transition }}
-      className={`flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-white p-3 shadow-sm ${isDragging ? 'opacity-60 z-10 relative' : ''}`}
+      className={`flex flex-wrap items-center gap-2 rounded-xl border bg-white p-3 shadow-sm ${
+        isDaytrip ? 'ml-10 border-indigo-200 border-l-4' : 'border-slate-200'
+      } ${isDragging ? 'opacity-60 z-10 relative' : ''}`}
     >
       <button
         type="button"
@@ -52,27 +82,72 @@ function SortableStopRow(props: {
       >
         ⠿
       </button>
-      <span className="w-6 text-center font-semibold text-slate-500">{index + 1}</span>
+      <span className="w-6 text-center font-semibold text-slate-500">
+        {isDaytrip ? '↳' : index + 1}
+      </span>
       <div className="flex-1 min-w-48">
         <CityAutocomplete
           cities={props.cities}
           value={stop.cityId}
+          customValue={stop.customName}
           onChange={props.onCity}
           usedCityIds={props.usedCityIds}
         />
       </div>
-      <label className="flex items-center gap-1.5 text-sm text-slate-600">
+
+      <label
+        className={`flex items-center gap-1.5 text-sm ${
+          toggleDisabled ? 'text-slate-300' : 'text-slate-600'
+        }`}
+        title={
+          toggleDisabled
+            ? 'A day trip needs a base city before it and can’t be the last stop'
+            : `Same-day round trip${props.baseName ? ` from ${props.baseName}` : ''} — nights stay with the base city`
+        }
+      >
         <input
-          type="number"
-          min={1}
-          max={30}
-          value={stop.nights}
-          onChange={(e) => props.onNights(Math.max(1, Math.min(30, Number(e.target.value) || 1)))}
-          className="w-16 rounded-md border border-slate-300 px-2 py-1.5 text-right"
-          aria-label={`Nights in stop ${index + 1}`}
+          type="checkbox"
+          checked={isDaytrip}
+          disabled={toggleDisabled}
+          onChange={(e) => props.onKind(e.target.checked ? 'daytrip' : 'stay')}
+          className="accent-indigo-600"
         />
-        nights
+        day trip{isDaytrip && props.baseName ? ` from ${props.baseName}` : ''}
       </label>
+
+      {isDaytrip ? (
+        <label className="flex items-center gap-1.5 text-sm text-slate-600" title="Hours spent at the destination. Default: 16 − round-trip transit.">
+          <input
+            type="number"
+            min={0}
+            max={16}
+            step={0.5}
+            placeholder="auto"
+            value={stop.onSiteHours ?? ''}
+            onChange={(e) => {
+              const v = e.target.value;
+              props.onOnSiteHours(v === '' ? undefined : Math.max(0, Math.min(16, Number(v))));
+            }}
+            className="w-16 rounded-md border border-slate-300 px-2 py-1.5 text-right"
+            aria-label={`Hours on site for stop ${index + 1}`}
+          />
+          h on site
+        </label>
+      ) : (
+        <label className="flex items-center gap-1.5 text-sm text-slate-600">
+          <input
+            type="number"
+            min={1}
+            max={30}
+            value={stop.nights}
+            onChange={(e) => props.onNights(Math.max(1, Math.min(30, Number(e.target.value) || 1)))}
+            className="w-16 rounded-md border border-slate-300 px-2 py-1.5 text-right"
+            aria-label={`Nights in stop ${index + 1}`}
+          />
+          nights
+        </label>
+      )}
+
       <div className="flex items-center gap-0.5">
         <button
           type="button"
@@ -103,6 +178,10 @@ function SortableStopRow(props: {
           ✕
         </button>
       </div>
+
+      {props.daytripIssue && (
+        <p className="w-full text-xs text-amber-700">⚠ {props.daytripIssue}</p>
+      )}
     </div>
   );
 }
@@ -111,13 +190,19 @@ function LegRow(props: {
   leg: Leg;
   origin: Stop;
   dest: Stop;
+  destIsDaytrip: boolean;
   cities: CitiesDatabase;
   pairs: CityPairsDatabase;
   onChange: (leg: Leg) => void;
 }) {
-  const { leg, origin, dest, cities, pairs } = props;
+  const { leg, origin, dest, destIsDaytrip, cities, pairs } = props;
 
+  const bothPlaced = isPlaced(origin) && isPlaced(dest);
+  // Dataset lookups need dataset cities on both ends; an off-list stop
+  // always goes through the override path.
   const ready = origin.cityId !== null && dest.cityId !== null;
+  const offList = bothPlaced && !ready;
+
   const unavailable = new Set<TransportMode>(
     ready
       ? TRANSPORT_MODES.filter(
@@ -136,12 +221,16 @@ function LegRow(props: {
       : null;
 
   const scheduled = ready ? lookupTimeMin(pairs, origin.cityId!, dest.cityId!, leg.mode) : null;
-  const autoMin =
-    ready && leg.via
-      ? viaLegMin(pairs, origin.cityId!, dest.cityId!, leg.via)
-      : scheduled === null
-        ? null
-        : scheduled + MODE_OVERHEAD_MIN[leg.mode];
+  const oneWayMin =
+    leg.overrideMin !== undefined
+      ? leg.overrideMin
+      : ready && leg.via
+        ? viaLegMin(pairs, origin.cityId!, dest.cityId!, leg.via)
+        : scheduled === null
+          ? null
+          : scheduled + MODE_OVERHEAD_MIN[leg.mode];
+  const shownMin = oneWayMin === null ? null : destIsDaytrip ? oneWayMin * 2 : oneWayMin;
+  const longRoundTrip = destIsDaytrip && shownMin !== null && shownMin > LONG_ROUND_TRIP_MIN;
 
   return (
     <div className="ml-10 flex flex-wrap items-center gap-3 py-1.5 text-sm text-slate-600">
@@ -171,11 +260,18 @@ function LegRow(props: {
         />
       )}
       {leg.overrideMin !== undefined ? (
-        <span className="font-medium text-amber-700">custom: {formatMin(leg.overrideMin)}</span>
-      ) : autoMin !== null ? (
+        <span className="font-medium text-amber-700">
+          custom: {formatMin(shownMin ?? leg.overrideMin)}
+          {destIsDaytrip && <span className="font-normal text-slate-500"> ×2 round trip</span>}
+        </span>
+      ) : shownMin !== null ? (
         <span>
-          ≈ <span className="font-medium text-slate-800">{formatMin(autoMin)}</span>
-          <span className="text-slate-400"> door-to-door</span>
+          ≈ <span className="font-medium text-slate-800">{formatMin(shownMin)}</span>
+          {destIsDaytrip ? (
+            <span className="text-slate-400"> round trip, door-to-door</span>
+          ) : (
+            <span className="text-slate-400"> door-to-door</span>
+          )}
           {leg.via && <span className="text-slate-400"> incl. transfer</span>}
         </span>
       ) : suggestion ? (
@@ -191,11 +287,18 @@ function LegRow(props: {
             route via {cities[suggestion.cityId]?.name ?? suggestion.cityId} ≈ {formatMin(suggestion.totalMin)}
           </button>
         </span>
+      ) : offList ? (
+        <span className="text-rose-600">off-list place — enter a one-way time</span>
       ) : ready ? (
         <span className="text-rose-600">no {leg.mode} data — enter a time</span>
       ) : null}
+      {longRoundTrip && (
+        <span className="text-amber-700">
+          ⚠ long round trip — consider staying overnight instead
+        </span>
+      )}
       <label className="flex items-center gap-1.5">
-        <span className="text-slate-400">override:</span>
+        <span className="text-slate-400">override{destIsDaytrip ? ' (one-way)' : ''}:</span>
         <input
           type="number"
           min={0}
@@ -260,6 +363,25 @@ export default function ItineraryBuilder({ stops, legs, cities, pairs, onStopsCh
     );
   };
 
+  const hasBaseBefore = (i: number) =>
+    stops.slice(0, i).some((s) => s.kind !== 'daytrip' && isPlaced(s));
+
+  /** Reorder/removal can strand a day trip in an invalid spot; the
+   *  engine degrades gracefully, but tell the user what's happening. */
+  const daytripIssue = (stop: Stop, i: number): string | null => {
+    if (stop.kind !== 'daytrip') return null;
+    if (!hasBaseBefore(i)) return 'day trips need a base city before them — treated as a regular stay for now';
+    if (i === stops.length - 1) return 'a day trip can’t end the trip — add your final city after it';
+    return null;
+  };
+
+  const baseNameFor = (i: number): string | null => {
+    for (let j = i - 1; j >= 0; j--) {
+      if (stops[j].kind !== 'daytrip' && isPlaced(stops[j])) return stopDisplayName(stops[j], cities);
+    }
+    return null;
+  };
+
   return (
     <div className="space-y-1">
       <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
@@ -269,8 +391,9 @@ export default function ItineraryBuilder({ stops, legs, cities, pairs, onStopsCh
               {i > 0 && (
                 <LegRow
                   leg={legs[i - 1] ?? { mode: 'train' }}
-                  origin={stops[i - 1]}
+                  origin={effectiveOrigin(stops, i) ?? stops[i - 1]}
                   dest={stop}
+                  destIsDaytrip={stop.kind === 'daytrip' && hasBaseBefore(i)}
                   cities={cities}
                   pairs={pairs}
                   onChange={(leg) => onLegsChange(legs.map((l, j) => (j === i - 1 ? leg : l)))}
@@ -282,11 +405,27 @@ export default function ItineraryBuilder({ stops, legs, cities, pairs, onStopsCh
                 count={stops.length}
                 cities={cities}
                 usedCityIds={usedCityIds}
-                onCity={(cityId) => {
-                  onStopsChange(stops.map((s, j) => (j === i ? { ...s, cityId } : s)));
+                baseName={baseNameFor(i)}
+                daytripIssue={daytripIssue(stop, i)}
+                onCity={(cityId, customName) => {
+                  onStopsChange(
+                    stops.map((s, j) =>
+                      j === i ? { ...s, cityId, customName: customName?.trim() || undefined } : s,
+                    ),
+                  );
                   onLegsChange(clearVias((j) => j === i - 1 || j === i));
                 }}
                 onNights={(nights) => onStopsChange(stops.map((s, j) => (j === i ? { ...s, nights } : s)))}
+                onKind={(kind) =>
+                  onStopsChange(
+                    stops.map((s, j) =>
+                      j === i ? { ...s, kind, onSiteHours: undefined } : s,
+                    ),
+                  )
+                }
+                onOnSiteHours={(onSiteHours) =>
+                  onStopsChange(stops.map((s, j) => (j === i ? { ...s, onSiteHours } : s)))
+                }
                 onRemove={() => removeStop(i)}
                 onMove={(dir) => moveStop(i, i + dir)}
               />

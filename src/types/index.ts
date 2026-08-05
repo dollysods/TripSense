@@ -32,6 +32,16 @@ export interface Stop {
   id: string;
   cityId: string | null;
   nights: number;
+  /** 'stay' (default) books nights here; 'daytrip' is a same-day round
+   *  trip from the nearest preceding stay stop — nights and the time
+   *  cost stay attributed to that base city. */
+  kind?: 'stay' | 'daytrip';
+  /** Day trips: manual hours on site, replacing the default
+   *  (16 − round-trip transit). */
+  onSiteHours?: number;
+  /** Off-list destination (e.g. Hallstatt): free-text name used when
+   *  cityId is null. No dataset times — leg overrides are the path. */
+  customName?: string;
 }
 
 /** A same-day transfer through an intermediate city, for pairs with no
@@ -54,7 +64,10 @@ export interface Leg {
 export interface CityResult {
   cityId: string;
   cityName: string;
+  /** Day-trip rows immediately follow their base city's row. */
+  kind: 'stay' | 'daytrip';
   nights: number;
+  /** For day trips this is the round trip (2× one-way, both overheads). */
   transitInMin: number;
   wakingHours: number;
   equivalentDays: number;
