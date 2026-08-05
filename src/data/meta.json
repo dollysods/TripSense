@@ -1,22 +1,22 @@
 {
-  "dataVersion": "2026-06-09",
-  "pairs": 600,
+  "dataVersion": "2026-08-05",
+  "pairs": 812,
   "provenance": {
     "train": {
       "file": "train_times.json",
-      "pairsWithData": 386
+      "pairsWithData": 547
     },
     "plane": {
       "file": "flight_times.json",
-      "pairsWithData": 558
+      "pairsWithData": 646
     },
     "bus": {
       "file": "bus_times.json",
-      "pairsWithData": 342
+      "pairsWithData": 464
     },
     "car": {
       "file": "car_times.json",
-      "pairsWithData": 454
+      "pairsWithData": 594
     }
   }
 }

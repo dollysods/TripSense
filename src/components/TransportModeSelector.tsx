@@ -1,7 +1,7 @@
 import type { TransportMode } from '../types';
 import { TRANSPORT_MODES } from '../types';
 
-const MODE_META: Record<TransportMode, { label: string; icon: string }> = {
+export const MODE_META: Record<TransportMode, { label: string; icon: string }> = {
   train: { label: 'Train', icon: '🚆' },
   plane: { label: 'Plane', icon: '✈️' },
   bus: { label: 'Bus', icon: '🚌' },

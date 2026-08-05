@@ -23,5 +23,10 @@
   "milan":     { "name": "Milan",     "country": "IT", "latitude": 45.4642, "longitude": 9.1900 },
   "athens":    { "name": "Athens",    "country": "GR", "latitude": 37.9838, "longitude": 23.7275 },
   "krakow":    { "name": "Krakow",    "country": "PL", "latitude": 50.0647, "longitude": 19.9450 },
-  "dubrovnik": { "name": "Dubrovnik", "country": "HR", "latitude": 42.6507, "longitude": 18.0944 }
+  "dubrovnik": { "name": "Dubrovnik", "country": "HR", "latitude": 42.6507, "longitude": 18.0944 },
+
+  "turin":        { "name": "Turin",        "country": "IT", "latitude": 45.0703, "longitude": 7.6869 },
+  "bratislava":   { "name": "Bratislava",   "country": "SK", "latitude": 48.1486, "longitude": 17.1077 },
+  "lugano":       { "name": "Lugano",       "country": "CH", "latitude": 46.0037, "longitude": 8.9511, "airport": false },
+  "cinque_terre": { "name": "Cinque Terre (via La Spezia)", "country": "IT", "latitude": 44.1024, "longitude": 9.8241, "airport": false, "car": false }
 }
