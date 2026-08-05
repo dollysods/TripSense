@@ -19,6 +19,7 @@ const COUNTRY_NAMES: Record<string, string> = {
   DE: 'Germany', ES: 'Spain', FR: 'France', GB: 'United Kingdom',
   GR: 'Greece', HR: 'Croatia', HU: 'Hungary', IE: 'Ireland',
   IT: 'Italy', NL: 'Netherlands', PL: 'Poland', PT: 'Portugal',
+  SK: 'Slovakia',
 };
 
 export default function CityAutocomplete({ cities, value, onChange, usedCityIds }: Props) {

@@ -8,9 +8,9 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import type { CitiesDatabase, CityPairsDatabase, Leg, Stop, TransportMode } from '../types';
 import { TRANSPORT_MODES } from '../types';
-import { MODE_OVERHEAD_MIN, formatMin, lookupTimeMin } from '../lib/calc';
+import { MODE_OVERHEAD_MIN, bestVia, formatMin, lookupTimeMin, viaLegMin } from '../lib/calc';
 import CityAutocomplete from './CityAutocomplete';
-import TransportModeSelector from './TransportModeSelector';
+import TransportModeSelector, { MODE_META } from './TransportModeSelector';
 
 interface Props {
   stops: Stop[];
@@ -111,10 +111,11 @@ function LegRow(props: {
   leg: Leg;
   origin: Stop;
   dest: Stop;
+  cities: CitiesDatabase;
   pairs: CityPairsDatabase;
   onChange: (leg: Leg) => void;
 }) {
-  const { leg, origin, dest, pairs } = props;
+  const { leg, origin, dest, cities, pairs } = props;
 
   const ready = origin.cityId !== null && dest.cityId !== null;
   const unavailable = new Set<TransportMode>(
@@ -124,23 +125,71 @@ function LegRow(props: {
         )
       : [],
   );
+
+  // Pairs with no direct data in any mode (no-airport gateway cities
+  // against sea-locked/rail-isolated partners): offer the best
+  // single-transfer routing instead of a dead end.
+  const allUnavailable = ready && unavailable.size === TRANSPORT_MODES.length;
+  const suggestion =
+    allUnavailable && !leg.via && leg.overrideMin === undefined
+      ? bestVia(pairs, cities, origin.cityId!, dest.cityId!)
+      : null;
+
   const scheduled = ready ? lookupTimeMin(pairs, origin.cityId!, dest.cityId!, leg.mode) : null;
-  const autoMin = scheduled === null ? null : scheduled + MODE_OVERHEAD_MIN[leg.mode];
+  const autoMin =
+    ready && leg.via
+      ? viaLegMin(pairs, origin.cityId!, dest.cityId!, leg.via)
+      : scheduled === null
+        ? null
+        : scheduled + MODE_OVERHEAD_MIN[leg.mode];
 
   return (
     <div className="ml-10 flex flex-wrap items-center gap-3 py-1.5 text-sm text-slate-600">
       <span aria-hidden className="text-slate-300">│</span>
-      <TransportModeSelector
-        value={leg.mode}
-        onChange={(mode) => props.onChange({ ...leg, mode, overrideMin: undefined })}
-        unavailable={unavailable}
-      />
+      {leg.via ? (
+        <span className="inline-flex items-center gap-1.5 rounded-lg border border-indigo-200 bg-indigo-50 px-2.5 py-1.5 text-indigo-800">
+          <span aria-hidden>{MODE_META[leg.via.modes[0]].icon}</span>
+          <span>
+            via <span className="font-medium">{cities[leg.via.cityId]?.name ?? leg.via.cityId}</span>
+          </span>
+          <span aria-hidden>{MODE_META[leg.via.modes[1]].icon}</span>
+          <button
+            type="button"
+            onClick={() => props.onChange({ ...leg, via: undefined })}
+            className="ml-1 text-indigo-400 hover:text-indigo-700"
+            aria-label="Remove via routing"
+            title="Remove via routing"
+          >
+            ✕
+          </button>
+        </span>
+      ) : (
+        <TransportModeSelector
+          value={leg.mode}
+          onChange={(mode) => props.onChange({ ...leg, mode, overrideMin: undefined })}
+          unavailable={unavailable}
+        />
+      )}
       {leg.overrideMin !== undefined ? (
         <span className="font-medium text-amber-700">custom: {formatMin(leg.overrideMin)}</span>
       ) : autoMin !== null ? (
         <span>
           ≈ <span className="font-medium text-slate-800">{formatMin(autoMin)}</span>
           <span className="text-slate-400"> door-to-door</span>
+          {leg.via && <span className="text-slate-400"> incl. transfer</span>}
+        </span>
+      ) : suggestion ? (
+        <span className="flex items-center gap-2">
+          <span className="text-slate-500">no direct option in our data —</span>
+          <button
+            type="button"
+            onClick={() =>
+              props.onChange({ ...leg, via: { cityId: suggestion.cityId, modes: suggestion.modes } })
+            }
+            className="rounded-lg border border-indigo-300 px-2 py-1 font-medium text-indigo-700 hover:bg-indigo-50"
+          >
+            route via {cities[suggestion.cityId]?.name ?? suggestion.cityId} ≈ {formatMin(suggestion.totalMin)}
+          </button>
         </span>
       ) : ready ? (
         <span className="text-rose-600">no {leg.mode} data — enter a time</span>
@@ -170,9 +219,16 @@ let nextStopId = 100;
 export default function ItineraryBuilder({ stops, legs, cities, pairs, onStopsChange, onLegsChange }: Props) {
   const usedCityIds = new Set(stops.map((s) => s.cityId).filter((c): c is string => c !== null));
 
+  // A via routing is chosen for one specific city pair; whenever a leg's
+  // endpoints change (city edit, reorder, removal) it must be dropped or
+  // it would silently price a route through an irrelevant city.
+  const clearVias = (affected: (legIndex: number) => boolean) =>
+    legs.map((l, j) => (affected(j) && l.via ? { ...l, via: undefined } : l));
+
   const moveStop = (from: number, to: number) => {
     if (to < 0 || to >= stops.length) return;
     onStopsChange(arrayMove(stops, from, to));
+    onLegsChange(clearVias(() => true));
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
@@ -196,7 +252,12 @@ export default function ItineraryBuilder({ stops, legs, cities, pairs, onStopsCh
     // into it (leg i-1), except for the first stop where leg 0 goes.
     const legIndex = Math.max(0, index - 1);
     onStopsChange(nextStops);
-    onLegsChange(legs.filter((_, i) => i !== legIndex));
+    // The leg that now bridges the gap spans a new pair — drop its via.
+    onLegsChange(
+      legs
+        .filter((_, i) => i !== legIndex)
+        .map((l, i2) => (i2 === legIndex && l.via ? { ...l, via: undefined } : l)),
+    );
   };
 
   return (
@@ -210,6 +271,7 @@ export default function ItineraryBuilder({ stops, legs, cities, pairs, onStopsCh
                   leg={legs[i - 1] ?? { mode: 'train' }}
                   origin={stops[i - 1]}
                   dest={stop}
+                  cities={cities}
                   pairs={pairs}
                   onChange={(leg) => onLegsChange(legs.map((l, j) => (j === i - 1 ? leg : l)))}
                 />
@@ -220,7 +282,10 @@ export default function ItineraryBuilder({ stops, legs, cities, pairs, onStopsCh
                 count={stops.length}
                 cities={cities}
                 usedCityIds={usedCityIds}
-                onCity={(cityId) => onStopsChange(stops.map((s, j) => (j === i ? { ...s, cityId } : s)))}
+                onCity={(cityId) => {
+                  onStopsChange(stops.map((s, j) => (j === i ? { ...s, cityId } : s)));
+                  onLegsChange(clearVias((j) => j === i - 1 || j === i));
+                }}
                 onNights={(nights) => onStopsChange(stops.map((s, j) => (j === i ? { ...s, nights } : s)))}
                 onRemove={() => removeStop(i)}
                 onMove={(dir) => moveStop(i, i + dir)}

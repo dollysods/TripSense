@@ -26,10 +26,21 @@ for (const [id, city] of Object.entries(cities)) {
   }
 }
 
+// City ids may themselves contain underscores (cinque_terre), so a pair
+// key can't be naively split — match a known city id prefix instead.
+function splitKey(key) {
+  for (const id of cityIds) {
+    if (key.startsWith(id + '_') && cityIds.has(key.slice(id.length + 1))) {
+      return [id, key.slice(id.length + 1)];
+    }
+  }
+  return [null, null];
+}
+
 let withTrain = 0;
 for (const [key, pair] of Object.entries(pairs)) {
-  const [origin, dest] = key.split('_');
-  if (!cityIds.has(origin) || !cityIds.has(dest)) fail(`${key}: unknown city id`);
+  const [origin, dest] = splitKey(key);
+  if (origin === null) fail(`${key}: unknown city id`);
   if (!pair.modes || Object.keys(pair.modes).length === 0) fail(`${key}: no modes object`);
   let usable = 0;
   for (const [mode, data] of Object.entries(pair.modes ?? {})) {
@@ -41,7 +52,17 @@ for (const [key, pair] of Object.entries(pairs)) {
     if (typeof data.direct !== 'boolean') fail(`${key}/${mode}: missing direct flag`);
     if (mode === 'train') withTrain++;
   }
-  if (usable === 0) fail(`${key}: no usable mode`);
+  if (usable === 0) {
+    // No-airport gateway cities (airport: false — Lugano, Cinque Terre)
+    // legitimately have all-null pairs against rail-isolated/sea-locked
+    // partners; the UI disables all modes and manual override is the
+    // path. Still fatal for any other city.
+    if (cities[origin]?.airport === false || cities[dest]?.airport === false) {
+      console.warn(`note: ${key}: all modes null (no-airport gateway city)`);
+    } else {
+      fail(`${key}: no usable mode`);
+    }
+  }
 }
 
 // Coverage floor: regressions in the extraction pipeline show up here.

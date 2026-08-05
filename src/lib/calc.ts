@@ -3,9 +3,11 @@ import type {
   CityPairsDatabase,
   ItineraryResult,
   Leg,
+  LegVia,
   Stop,
   TransportMode,
 } from '../types';
+import { TRANSPORT_MODES } from '../types';
 
 export const SLEEP_HOURS_PER_NIGHT = 8;
 export const WAKING_HOURS_PER_DAY = 24 - SLEEP_HOURS_PER_NIGHT;
@@ -39,7 +41,52 @@ export function lookupTimeMin(
   return data ? data.time_min : null;
 }
 
-/** Effective leg time in minutes: override > dataset + overhead > null. */
+/** Door-to-door minutes for a leg routed through an intermediate city:
+ *  both segments' scheduled time plus each segment's mode overhead.
+ *  Null if either segment has no data (e.g. cities changed since the
+ *  via was chosen). */
+export function viaLegMin(
+  pairs: CityPairsDatabase,
+  originId: string,
+  destId: string,
+  via: LegVia,
+): number | null {
+  const t1 = lookupTimeMin(pairs, originId, via.cityId, via.modes[0]);
+  const t2 = lookupTimeMin(pairs, via.cityId, destId, via.modes[1]);
+  if (t1 === null || t2 === null) return null;
+  return t1 + MODE_OVERHEAD_MIN[via.modes[0]] + t2 + MODE_OVERHEAD_MIN[via.modes[1]];
+}
+
+/** Best single-transfer routing for a pair with no direct data: the
+ *  intermediate city and mode combination minimizing door-to-door time.
+ *  Null when no city connects to both ends. */
+export function bestVia(
+  pairs: CityPairsDatabase,
+  cities: CitiesDatabase,
+  originId: string,
+  destId: string,
+): (LegVia & { totalMin: number }) | null {
+  let best: (LegVia & { totalMin: number }) | null = null;
+  for (const viaId of Object.keys(cities)) {
+    if (viaId === originId || viaId === destId) continue;
+    for (const m1 of TRANSPORT_MODES) {
+      const t1 = lookupTimeMin(pairs, originId, viaId, m1);
+      if (t1 === null) continue;
+      for (const m2 of TRANSPORT_MODES) {
+        const t2 = lookupTimeMin(pairs, viaId, destId, m2);
+        if (t2 === null) continue;
+        const totalMin =
+          t1 + MODE_OVERHEAD_MIN[m1] + t2 + MODE_OVERHEAD_MIN[m2];
+        if (!best || totalMin < best.totalMin) {
+          best = { cityId: viaId, modes: [m1, m2], totalMin };
+        }
+      }
+    }
+  }
+  return best;
+}
+
+/** Effective leg time in minutes: override > via routing > dataset + overhead > null. */
 export function effectiveLegMin(
   pairs: CityPairsDatabase,
   origin: Stop,
@@ -48,6 +95,7 @@ export function effectiveLegMin(
 ): number | null {
   if (leg.overrideMin !== undefined) return leg.overrideMin;
   if (!origin.cityId || !dest.cityId) return null;
+  if (leg.via) return viaLegMin(pairs, origin.cityId, dest.cityId, leg.via);
   const scheduled = lookupTimeMin(pairs, origin.cityId, dest.cityId, leg.mode);
   return scheduled === null ? null : scheduled + MODE_OVERHEAD_MIN[leg.mode];
 }
