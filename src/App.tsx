@@ -7,6 +7,7 @@ import ExportButtons from './components/ExportButtons';
 import citiesJson from './data/cities.json';
 import cityPairsJson from './data/cityPairs.json';
 import dataMeta from './data/meta.json';
+import { Analytics } from "@vercel/analytics/react";
 
 const cities = citiesJson as CitiesDatabase;
 const cityPairs = cityPairsJson as unknown as CityPairsDatabase;
@@ -38,6 +39,7 @@ export default function App() {
           </p>
         </div>
       </header>
+     <Analytics />
 
       <main className="mx-auto max-w-3xl space-y-8 px-4 py-8">
         <section>
