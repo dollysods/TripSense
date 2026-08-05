@@ -39,7 +39,10 @@ export default function App() {
           </p>
         </div>
       </header>
-     <Analytics />
+      {/* mode="production" is required on Vite - unlike webpack/Next, Vite
+          doesn't define process.env.NODE_ENV in client code, so the
+          package's auto-detection silently no-ops without this override. */}
+      <Analytics mode="production" />
 
       <main className="mx-auto max-w-3xl space-y-8 px-4 py-8">
         <section>
