@@ -1,6 +1,7 @@
 import type {
   CitiesDatabase,
   CityPairsDatabase,
+  CityResult,
   ItineraryResult,
   Leg,
   LegVia,
@@ -100,10 +101,44 @@ export function effectiveLegMin(
   return scheduled === null ? null : scheduled + MODE_OVERHEAD_MIN[leg.mode];
 }
 
+/** A stop participates in the calculation once it has a dataset city or
+ *  a custom (off-list) name. */
+export function isPlaced(s: Stop): boolean {
+  return s.cityId !== null || !!s.customName?.trim();
+}
+
+export function stopDisplayName(s: Stop, cities: CitiesDatabase): string {
+  if (s.cityId) return cities[s.cityId]?.name ?? s.cityId;
+  return s.customName?.trim() ?? '?';
+}
+
+/** A stop acts as a day trip only when a base exists before it. */
+export function isEffectiveDaytrip(stop: Stop, idx: number, placed: Stop[]): boolean {
+  return (
+    stop.kind === 'daytrip' &&
+    idx > 0 &&
+    placed.slice(0, idx).some((p) => p.kind !== 'daytrip')
+  );
+}
+
+/** The stop the traveler is physically at after visiting placed[idx]:
+ *  a day trip returns them to its base. */
+function locationAfter(placed: Stop[], idx: number): Stop {
+  for (let i = idx; i >= 0; i--) {
+    if (!isEffectiveDaytrip(placed[i], i, placed)) return placed[i];
+  }
+  return placed[idx];
+}
+
 /**
- * Core v1 formula. Each city's budget is nights × 16 waking hours; the
- * transit time of the leg *arriving* into that city is paid out of that
- * city's budget (the 7-hour train to Prague costs you Prague time).
+ * Core formula. Each stay's budget is nights × 16 waking hours; the
+ * transit of the leg *arriving* there is paid out of that city's budget
+ * (the 7-hour train to Prague costs you Prague time).
+ *
+ * Day trips (v1.1b): the round trip (2× one-way, overhead both ways)
+ * plus the hours spent on site are paid out of the BASE city's budget;
+ * nights stay with the base. On-site hours default to 16 − round-trip
+ * transit, overridable per stop. The next leg departs from the base.
  */
 export function calcItinerary(
   stops: Stop[],
@@ -111,26 +146,68 @@ export function calcItinerary(
   cities: CitiesDatabase,
   pairs: CityPairsDatabase,
 ): ItineraryResult {
-  const perCity = stops
-    .filter((s): s is Stop & { cityId: string } => s.cityId !== null)
-    .map((stop, idx, placed) => {
-      let transitInMin = 0;
-      if (idx > 0) {
-        const legIdx = stops.indexOf(placed[idx - 1]);
-        const leg = legs[legIdx];
-        transitInMin = effectiveLegMin(pairs, placed[idx - 1], stop, leg) ?? 0;
+  const placed = stops.filter(isPlaced);
+
+  // First pass: per-stop transit + provisional hours; remember each
+  // stay's budget so day-trip costs can be charged back to it.
+  const rows: CityResult[] = [];
+  const budgets: number[] = []; // parallel to rows; stays only (NaN for day trips)
+  let lastStayRow = -1;
+
+  placed.forEach((stop, idx) => {
+    const daytrip = isEffectiveDaytrip(stop, idx, placed);
+    const name = stopDisplayName(stop, cities);
+
+    let transitInMin = 0;
+    if (idx > 0) {
+      // Legs sit between consecutive raw stops; the leg arriving here is
+      // the one after the previous placed stop. Its effective origin is
+      // wherever the traveler actually is (day trips return to base).
+      const legIdx = stops.indexOf(placed[idx - 1]);
+      const leg = legs[legIdx] ?? { mode: 'train' as const };
+      const origin = locationAfter(placed, idx - 1);
+      const oneWay = effectiveLegMin(pairs, origin, stop, leg) ?? 0;
+      transitInMin = daytrip ? oneWay * 2 : oneWay;
+    }
+
+    if (daytrip) {
+      const onSite =
+        stop.onSiteHours ?? Math.max(0, WAKING_HOURS_PER_DAY - transitInMin / 60);
+      // Charge the base: round-trip transit + hours spent on site.
+      if (lastStayRow >= 0) {
+        budgets[lastStayRow] -= transitInMin / 60 + onSite;
       }
-      const budget = stop.nights * WAKING_HOURS_PER_DAY;
-      const wakingHours = Math.max(0, budget - transitInMin / 60);
-      return {
-        cityId: stop.cityId,
-        cityName: cities[stop.cityId]?.name ?? stop.cityId,
+      rows.push({
+        cityId: stop.cityId ?? `custom-${name}`,
+        cityName: name,
+        kind: 'daytrip',
+        nights: 0,
+        transitInMin,
+        wakingHours: onSite,
+        equivalentDays: onSite / WAKING_HOURS_PER_DAY,
+      });
+      budgets.push(NaN);
+    } else {
+      rows.push({
+        cityId: stop.cityId ?? `custom-${name}`,
+        cityName: name,
+        kind: 'stay',
         nights: stop.nights,
         transitInMin,
-        wakingHours,
-        equivalentDays: wakingHours / WAKING_HOURS_PER_DAY,
-      };
-    });
+        wakingHours: 0, // finalized below from the (possibly charged) budget
+        equivalentDays: 0,
+      });
+      budgets.push(stop.nights * WAKING_HOURS_PER_DAY - transitInMin / 60);
+      lastStayRow = rows.length - 1;
+    }
+  });
+
+  // Second pass: finalize stay hours after day-trip charges.
+  const perCity = rows.map((row, i) => {
+    if (row.kind === 'daytrip') return row;
+    const wakingHours = Math.max(0, budgets[i]);
+    return { ...row, wakingHours, equivalentDays: wakingHours / WAKING_HOURS_PER_DAY };
+  });
 
   return {
     perCity,

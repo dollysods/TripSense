@@ -13,7 +13,20 @@ interface Props {
  * must not depend on viewport-relative Tailwind utilities.
  */
 const ShareCard = forwardRef<HTMLDivElement, Props>(function ShareCard({ result }, ref) {
-  const route = result.perCity.map((c) => c.cityName).join(' → ');
+  // Day trips fold into their base city's line and tile.
+  const groups: { base: ItineraryResult['perCity'][number]; trips: ItineraryResult['perCity'] }[] = [];
+  for (const c of result.perCity) {
+    if (c.kind === 'daytrip' && groups.length > 0) groups[groups.length - 1].trips.push(c);
+    else groups.push({ base: c, trips: [] });
+  }
+
+  const route = groups
+    .map((g) =>
+      g.trips.length
+        ? `${g.base.cityName} + ${g.trips.map((t) => `${t.cityName} day trip`).join(' + ')}`
+        : g.base.cityName,
+    )
+    .join(' → ');
 
   return (
     <div
@@ -37,9 +50,9 @@ const ShareCard = forwardRef<HTMLDivElement, Props>(function ShareCard({ result 
       </div>
 
       <div style={{ display: 'flex', gap: 18, flexWrap: 'wrap' }}>
-        {result.perCity.map((c, i) => (
+        {groups.map((g, i) => (
           <div
-            key={`${c.cityId}-${i}`}
+            key={`${g.base.cityId}-${i}`}
             style={{
               background: 'rgba(255,255,255,0.14)',
               borderRadius: 16,
@@ -47,11 +60,16 @@ const ShareCard = forwardRef<HTMLDivElement, Props>(function ShareCard({ result 
               minWidth: 150,
             }}
           >
-            <div style={{ fontSize: 24, fontWeight: 700 }}>{c.cityName}</div>
+            <div style={{ fontSize: 24, fontWeight: 700 }}>{g.base.cityName}</div>
             <div style={{ fontSize: 34, fontWeight: 800, marginTop: 6 }}>
-              {formatHours(c.wakingHours)}
+              {formatHours(g.base.wakingHours)}
             </div>
-            <div style={{ fontSize: 18, opacity: 0.75 }}>awake · {c.nights} nights</div>
+            <div style={{ fontSize: 18, opacity: 0.75 }}>awake · {g.base.nights} nights</div>
+            {g.trips.map((t, j) => (
+              <div key={`${t.cityId}-${j}`} style={{ fontSize: 17, opacity: 0.85, marginTop: 6 }}>
+                ↳ {t.cityName} · {formatHours(t.wakingHours)} day trip
+              </div>
+            ))}
           </div>
         ))}
       </div>
