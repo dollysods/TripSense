@@ -20,11 +20,12 @@ interface Props {
 }
 
 const COUNTRY_NAMES: Record<string, string> = {
-  AT: 'Austria', BE: 'Belgium', CH: 'Switzerland', CZ: 'Czechia',
-  DE: 'Germany', ES: 'Spain', FR: 'France', GB: 'United Kingdom',
-  GR: 'Greece', HR: 'Croatia', HU: 'Hungary', IE: 'Ireland',
-  IT: 'Italy', NL: 'Netherlands', PL: 'Poland', PT: 'Portugal',
-  SK: 'Slovakia',
+  AT: 'Austria', BE: 'Belgium', CH: 'Switzerland', CY: 'Cyprus',
+  CZ: 'Czechia', DE: 'Germany', ES: 'Spain', FR: 'France',
+  GB: 'United Kingdom', GR: 'Greece', HR: 'Croatia', HU: 'Hungary',
+  IE: 'Ireland', IT: 'Italy', LI: 'Liechtenstein', LU: 'Luxembourg',
+  MT: 'Malta', NL: 'Netherlands', PL: 'Poland', PT: 'Portugal',
+  RO: 'Romania', SI: 'Slovenia', SK: 'Slovakia',
 };
 
 const CUSTOM = '__custom__';
