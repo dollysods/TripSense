@@ -1,7 +1,10 @@
 /**
- * CI data gate: validates the bundled production dataset. Runs in CI
- * before every build so a bad data refresh can never reach production.
- * Exit code 1 on any failure.
+ * CI data gate: validates the production dataset -- cities.json and
+ * meta.json (bundled from src/data) plus cityPairs.json (served from
+ * public/data and fetched at runtime since v1.1c; too large at 64
+ * cities to bundle without blocking first paint -- see App.tsx). Runs
+ * in CI before every build so a bad data refresh can never reach
+ * production. Exit code 1 on any failure.
  */
 import { readFile } from 'node:fs/promises';
 
@@ -9,14 +12,14 @@ const MAX_MIN = { train: 2400, plane: 600, bus: 2400, car: 2400 };
 const MODES = Object.keys(MAX_MIN);
 
 const cities = JSON.parse(await readFile('src/data/cities.json', 'utf8'));
-const pairs = JSON.parse(await readFile('src/data/cityPairs.json', 'utf8'));
+const pairs = JSON.parse(await readFile('public/data/cityPairs.json', 'utf8'));
 const meta = JSON.parse(await readFile('src/data/meta.json', 'utf8'));
 
 let failures = 0;
 const fail = (msg) => { console.error(`FAIL: ${msg}`); failures++; };
 
 const cityIds = new Set(Object.keys(cities));
-if (cityIds.size < 20) fail(`only ${cityIds.size} cities — expected 20+`);
+if (cityIds.size < 60) fail(`only ${cityIds.size} cities — expected 60+ (v1.1c: 64-city dataset)`);
 if (!/^\d{4}-\d{2}-\d{2}$/.test(meta.dataVersion)) fail('meta.dataVersion missing or malformed');
 
 for (const [id, city] of Object.entries(cities)) {
@@ -66,8 +69,8 @@ for (const [key, pair] of Object.entries(pairs)) {
 }
 
 // Coverage floor: regressions in the extraction pipeline show up here.
-if (withTrain < 350) fail(`only ${withTrain} pairs with train data — expected 350+`);
-if (Object.keys(pairs).length < 550) fail(`only ${Object.keys(pairs).length} pairs — expected 550+`);
+if (withTrain < 2000) fail(`only ${withTrain} pairs with train data — expected 2000+ (v1.1c)`);
+if (Object.keys(pairs).length < 3800) fail(`only ${Object.keys(pairs).length} pairs — expected 3800+ (v1.1c)`);
 
 if (failures) {
   console.error(`\n${failures} validation failure(s).`);
