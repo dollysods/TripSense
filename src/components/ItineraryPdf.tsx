@@ -1,5 +1,7 @@
 import { Document, Page, StyleSheet, Text, View } from '@react-pdf/renderer';
 import type { ItineraryResult } from '../types';
+import type { ReturnComparison, StopDates } from '../lib/dates';
+import { formatStayRange, returnComparisonMessage } from '../lib/dates';
 import { WAKING_HOURS_PER_DAY, formatHours, formatMin } from '../lib/calc';
 
 const styles = StyleSheet.create({
@@ -12,7 +14,11 @@ const styles = StyleSheet.create({
   bold: { fontFamily: 'Helvetica-Bold' },
   city: { flex: 3 },
   daytripCity: { color: '#64748b' },
+  dates: { flex: 1.6, color: '#64748b' },
   num: { flex: 1, textAlign: 'right' },
+  returnLine: { fontSize: 10, marginTop: 10, fontFamily: 'Helvetica-Bold' },
+  returnLineOver: { color: '#e11d48' },
+  returnLineOk: { color: '#334155' },
   footer: { position: 'absolute', bottom: 32, left: 48, right: 48, fontSize: 8, color: '#94a3b8' },
 });
 
@@ -26,7 +32,15 @@ function groupDayTrips(result: ItineraryResult) {
   return groups;
 }
 
-export function ItineraryPdf({ result }: { result: ItineraryResult }) {
+export function ItineraryPdf({
+  result,
+  stopDates,
+  returnComparison,
+}: {
+  result: ItineraryResult;
+  stopDates?: (StopDates | null)[];
+  returnComparison?: ReturnComparison | null;
+}) {
   const route = groupDayTrips(result)
     .map((g) =>
       g.trips.length
@@ -34,6 +48,9 @@ export function ItineraryPdf({ result }: { result: ItineraryResult }) {
         : g.base.cityName,
     )
     .join(' → ');
+
+  const showDates = !!stopDates?.some((d) => d !== null);
+  const comparisonMessage = returnComparisonMessage(returnComparison ?? null);
 
   return (
     <Document title="TripSense itinerary" author="TripSense">
@@ -43,6 +60,7 @@ export function ItineraryPdf({ result }: { result: ItineraryResult }) {
 
         <View style={[styles.row, styles.headerRow]}>
           <Text style={[styles.city, styles.bold]}>Destination</Text>
+          {showDates && <Text style={[styles.dates, styles.bold]}>Dates</Text>}
           <Text style={[styles.num, styles.bold]}>Nights</Text>
           <Text style={[styles.num, styles.bold]}>Transit in</Text>
           <Text style={[styles.num, styles.bold]}>Waking hours</Text>
@@ -51,11 +69,15 @@ export function ItineraryPdf({ result }: { result: ItineraryResult }) {
 
         {result.perCity.map((c, i) => {
           const daytrip = c.kind === 'daytrip';
+          const dates = stopDates?.[i] ?? null;
           return (
             <View key={`${c.cityId}-${i}`} style={styles.row}>
               <Text style={daytrip ? [styles.city, styles.daytripCity] : styles.city}>
                 {daytrip ? `    ↳ ${c.cityName} (day trip)` : c.cityName}
               </Text>
+              {showDates && (
+                <Text style={styles.dates}>{!daytrip && dates ? formatStayRange(dates) : '—'}</Text>
+              )}
               <Text style={styles.num}>{daytrip ? '—' : c.nights}</Text>
               <Text style={styles.num}>
                 {c.transitInMin > 0 ? `${formatMin(c.transitInMin)}${daytrip ? ' rt' : ''}` : '—'}
@@ -68,6 +90,7 @@ export function ItineraryPdf({ result }: { result: ItineraryResult }) {
 
         <View style={[styles.row, styles.totalRow]}>
           <Text style={[styles.city, styles.bold]}>Total</Text>
+          {showDates && <Text style={styles.dates} />}
           <Text style={[styles.num, styles.bold]}>{result.totalNights}</Text>
           <Text style={[styles.num, styles.bold]}>{formatMin(result.totalTransitMin)}</Text>
           <Text style={[styles.num, styles.bold]}>{formatHours(result.totalWakingHours)}</Text>
@@ -75,6 +98,17 @@ export function ItineraryPdf({ result }: { result: ItineraryResult }) {
             {(result.totalWakingHours / WAKING_HOURS_PER_DAY).toFixed(2)}
           </Text>
         </View>
+
+        {comparisonMessage && (
+          <Text
+            style={[
+              styles.returnLine,
+              returnComparison?.status === 'over' ? styles.returnLineOver : styles.returnLineOk,
+            ]}
+          >
+            {comparisonMessage}
+          </Text>
+        )}
 
         <Text style={styles.footer}>
           Waking hours = nights × {WAKING_HOURS_PER_DAY}h − transit into the city, assuming 8h sleep
