@@ -49,12 +49,15 @@ function SortableStopRow(props: {
   usedCityIds: Set<string>;
   baseName: string | null;
   daytripIssue: string | null;
+  /** Curated day trips from this stop's city not already in the itinerary. */
+  suggestedDayTrips: string[];
   onCity: (cityId: string | null, customName?: string) => void;
   onNights: (nights: number) => void;
   onKind: (kind: 'stay' | 'daytrip') => void;
   onOnSiteHours: (hours: number | undefined) => void;
   onRemove: () => void;
   onMove: (dir: -1 | 1) => void;
+  onAddSuggestedDayTrip: (cityId: string) => void;
 }) {
   const { stop, index, count } = props;
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
@@ -181,6 +184,21 @@ function SortableStopRow(props: {
 
       {props.daytripIssue && (
         <p className="w-full text-xs text-amber-700">⚠ {props.daytripIssue}</p>
+      )}
+      {props.suggestedDayTrips.length > 0 && (
+        <p className="flex w-full flex-wrap items-center gap-1.5 text-xs text-slate-500">
+          <span>Popular day trip{props.suggestedDayTrips.length > 1 ? 's' : ''}:</span>
+          {props.suggestedDayTrips.map((cityId) => (
+            <button
+              key={cityId}
+              type="button"
+              onClick={() => props.onAddSuggestedDayTrip(cityId)}
+              className="rounded-full border border-indigo-200 bg-indigo-50 px-2.5 py-1 font-medium text-indigo-700 hover:bg-indigo-100"
+            >
+              + {props.cities[cityId]?.name ?? cityId}
+            </button>
+          ))}
+        </p>
       )}
     </div>
   );
@@ -348,6 +366,15 @@ export default function ItineraryBuilder({ stops, legs, cities, pairs, onStopsCh
     onLegsChange([...legs, { mode: 'train' }]);
   };
 
+  /** One-click add for a suggested day trip (Feature 3b): inserts a new
+   *  day-trip stop right after the base, plus the leg into it. Mirrors
+   *  addStop's stops/legs parallel-array bookkeeping. */
+  const addSuggestedDayTrip = (afterIndex: number, cityId: string) => {
+    const newStop: Stop = { id: `stop-${nextStopId++}`, cityId, nights: 1, kind: 'daytrip' };
+    onStopsChange([...stops.slice(0, afterIndex + 1), newStop, ...stops.slice(afterIndex + 1)]);
+    onLegsChange([...legs.slice(0, afterIndex), { mode: 'train' }, ...legs.slice(afterIndex)]);
+  };
+
   const removeStop = (index: number) => {
     if (stops.length <= 2) return;
     const nextStops = stops.filter((_, i) => i !== index);
@@ -373,6 +400,14 @@ export default function ItineraryBuilder({ stops, legs, cities, pairs, onStopsCh
     if (!hasBaseBefore(i)) return 'day trips need a base city before them — treated as a regular stay for now';
     if (i === stops.length - 1) return 'a day trip can’t end the trip — add your final city after it';
     return null;
+  };
+
+  /** Curated day trips from this stop's city, minus ones already used
+   *  anywhere in the itinerary. Only offered from stay stops — a day
+   *  trip can't itself have day trips. */
+  const suggestionsFor = (stop: Stop): string[] => {
+    if (stop.kind === 'daytrip' || !stop.cityId) return [];
+    return (cities[stop.cityId]?.suggestedDayTrips ?? []).filter((id) => !usedCityIds.has(id));
   };
 
   const baseNameFor = (i: number): string | null => {
@@ -407,6 +442,7 @@ export default function ItineraryBuilder({ stops, legs, cities, pairs, onStopsCh
                 usedCityIds={usedCityIds}
                 baseName={baseNameFor(i)}
                 daytripIssue={daytripIssue(stop, i)}
+                suggestedDayTrips={suggestionsFor(stop)}
                 onCity={(cityId, customName) => {
                   onStopsChange(
                     stops.map((s, j) =>
@@ -428,6 +464,7 @@ export default function ItineraryBuilder({ stops, legs, cities, pairs, onStopsCh
                 }
                 onRemove={() => removeStop(i)}
                 onMove={(dir) => moveStop(i, i + dir)}
+                onAddSuggestedDayTrip={(cityId) => addSuggestedDayTrip(i, cityId)}
               />
             </div>
           ))}
