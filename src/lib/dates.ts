@@ -31,8 +31,13 @@ export interface StopDates {
 }
 
 function addDays(iso: string, days: number): string {
-  const d = new Date(`${iso}T00:00:00`);
-  d.setDate(d.getDate() + days);
+  // UTC throughout: parsing/mutating in local time and formatting via
+  // toISOString() (always UTC) loses a day whenever the runtime's local
+  // offset is positive (e.g. Europe/Lisbon in DST) — local midnight then
+  // falls on the previous UTC calendar date. Treating the ISO string as a
+  // UTC calendar date end to end keeps this genuinely timezone-naive.
+  const d = new Date(`${iso}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + days);
   return d.toISOString().slice(0, 10);
 }
 
