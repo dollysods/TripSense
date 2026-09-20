@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import type { CitiesDatabase, CityPairsDatabase, Leg, Stop } from './types';
 import { calcItinerary } from './lib/calc';
 import { compareReturnDate, computeStopDates, tripEndDate } from './lib/dates';
@@ -11,6 +11,11 @@ import dataMeta from './data/meta.json';
 import { Analytics } from "@vercel/analytics/react";
 
 const cities = citiesJson as CitiesDatabase;
+
+// Leaflet (~40 KB gzip) is lazy-loaded the same way @react-pdf/renderer and
+// html-to-image already are, so it never touches the main bundle or the
+// <3s load budget (Feature 2, v1.2 plan).
+const RouteMap = lazy(() => import('./components/RouteMap'));
 
 // cityPairs.json is fetched at runtime instead of bundled (v1.1c): at
 // 64 cities it's ~550 KB raw, which as a static import gets inlined
@@ -65,7 +70,7 @@ export default function App() {
   return (
     <div className="min-h-screen bg-slate-100">
       <header className="border-b border-slate-200 bg-white">
-        <div className="mx-auto max-w-3xl px-4 py-5">
+        <div className="mx-auto max-w-5xl px-4 py-5">
           <h1 className="text-2xl font-bold text-slate-900">
             🚆 TripSense
           </h1>
@@ -80,7 +85,7 @@ export default function App() {
           package's auto-detection silently no-ops without this override. */}
       <Analytics mode="production" />
 
-      <main className="mx-auto max-w-3xl space-y-8 px-4 py-8">
+      <main className="mx-auto max-w-5xl space-y-8 px-4 py-8">
         <section className="space-y-3">
           <h2 className="text-lg font-semibold text-slate-800">Your itinerary</h2>
           <TripDatesInput
@@ -115,12 +120,23 @@ export default function App() {
               <h2 className="text-lg font-semibold text-slate-800">Your real time budget</h2>
               <ExportButtons result={result} stopDates={stopDates} returnComparison={returnComparison} />
             </div>
-            <ResultsDisplay result={result} stopDates={stopDates} returnComparison={returnComparison} />
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start">
+              <ResultsDisplay result={result} stopDates={stopDates} returnComparison={returnComparison} />
+              <Suspense
+                fallback={
+                  <div className="flex h-80 items-center justify-center rounded-xl border border-slate-200 bg-white text-sm text-slate-400">
+                    Loading map…
+                  </div>
+                }
+              >
+                <RouteMap result={result} cities={cities} />
+              </Suspense>
+            </div>
           </section>
         )}
       </main>
 
-      <footer className="mx-auto max-w-3xl px-4 pb-8 text-xs text-slate-400">
+      <footer className="mx-auto max-w-5xl px-4 pb-8 text-xs text-slate-400">
         <p>
           Train times via open European GTFS data routed by{' '}
           <a className="underline" href="https://transitous.org">Transitous</a> and Deutsche Bahn,
