@@ -1,68 +1,512 @@
 {
-  "paris":     { "name": "Paris",     "country": "FR", "latitude": 48.8566, "longitude": 2.3522 },
-  "london":    { "name": "London",    "country": "GB", "latitude": 51.5074, "longitude": -0.1278 },
-  "amsterdam": { "name": "Amsterdam", "country": "NL", "latitude": 52.3676, "longitude": 4.9041 },
-  "rome":      { "name": "Rome",      "country": "IT", "latitude": 41.9028, "longitude": 12.4964 },
-  "barcelona": { "name": "Barcelona", "country": "ES", "latitude": 41.3874, "longitude": 2.1686 },
-  "munich":    { "name": "Munich",    "country": "DE", "latitude": 48.1351, "longitude": 11.5820 },
-  "vienna":    { "name": "Vienna",    "country": "AT", "latitude": 48.2082, "longitude": 16.3738 },
-  "prague":    { "name": "Prague",    "country": "CZ", "latitude": 50.0755, "longitude": 14.4378 },
-  "budapest":  { "name": "Budapest",  "country": "HU", "latitude": 47.4979, "longitude": 19.0402 },
-  "dublin":    { "name": "Dublin",    "country": "IE", "latitude": 53.3498, "longitude": -6.2603 },
-  "berlin":    { "name": "Berlin",    "country": "DE", "latitude": 52.5200, "longitude": 13.4050 },
-  "florence":  { "name": "Florence",  "country": "IT", "latitude": 43.7696, "longitude": 11.2558 },
-  "venice":    { "name": "Venice",    "country": "IT", "latitude": 45.4408, "longitude": 12.3155 },
-  "lisbon":    { "name": "Lisbon",    "country": "PT", "latitude": 38.7223, "longitude": -9.1393 },
-  "madrid":    { "name": "Madrid",    "country": "ES", "latitude": 40.4168, "longitude": -3.7038 },
-  "zurich":    { "name": "Zurich",    "country": "CH", "latitude": 47.3769, "longitude": 8.5417 },
-  "salzburg":  { "name": "Salzburg",  "country": "AT", "latitude": 47.8095, "longitude": 13.0550 },
-  "innsbruck": { "name": "Innsbruck", "country": "AT", "latitude": 47.2692, "longitude": 11.4041 },
-  "lyon":      { "name": "Lyon",      "country": "FR", "latitude": 45.7640, "longitude": 4.8357 },
-  "brussels":  { "name": "Brussels",  "country": "BE", "latitude": 50.8503, "longitude": 4.3517 },
-  "frankfurt": { "name": "Frankfurt", "country": "DE", "latitude": 50.1109, "longitude": 8.6821 },
-  "milan":     { "name": "Milan",     "country": "IT", "latitude": 45.4642, "longitude": 9.1900 },
-  "athens":    { "name": "Athens",    "country": "GR", "latitude": 37.9838, "longitude": 23.7275 },
-  "krakow":    { "name": "Krakow",    "country": "PL", "latitude": 50.0647, "longitude": 19.9450 },
-  "dubrovnik": { "name": "Dubrovnik", "country": "HR", "latitude": 42.6507, "longitude": 18.0944 },
-
-  "turin":        { "name": "Turin",        "country": "IT", "latitude": 45.0703, "longitude": 7.6869 },
-  "bratislava":   { "name": "Bratislava",   "country": "SK", "latitude": 48.1486, "longitude": 17.1077 },
-  "lugano":       { "name": "Lugano",       "country": "CH", "latitude": 46.0037, "longitude": 8.9511, "airport": false },
-  "cinque_terre": { "name": "Cinque Terre (via La Spezia)", "country": "IT", "latitude": 44.1024, "longitude": 9.8241, "airport": false, "car": false },
-
-  "marseille":    { "name": "Marseille",    "country": "FR", "latitude": 43.2965, "longitude": 5.3698 },
-  "nice":         { "name": "Nice",         "country": "FR", "latitude": 43.7102, "longitude": 7.2620 },
-  "bordeaux":     { "name": "Bordeaux",     "country": "FR", "latitude": 44.8378, "longitude": -0.5792 },
-  "strasbourg":   { "name": "Strasbourg",   "country": "FR", "latitude": 48.5734, "longitude": 7.7521 },
-  "edinburgh":    { "name": "Edinburgh",    "country": "GB", "latitude": 55.9533, "longitude": -3.1883 },
-  "manchester":   { "name": "Manchester",   "country": "GB", "latitude": 53.4808, "longitude": -2.2426 },
-  "liverpool":    { "name": "Liverpool",    "country": "GB", "latitude": 53.4084, "longitude": -2.9916 },
-  "cardiff":      { "name": "Cardiff",      "country": "GB", "latitude": 51.4816, "longitude": -3.1791 },
-  "cork":         { "name": "Cork",         "country": "IE", "latitude": 51.8985, "longitude": -8.4756 },
-  "bruges":       { "name": "Bruges",       "country": "BE", "latitude": 51.2093, "longitude": 3.2247, "airport": false },
-  "rotterdam":    { "name": "Rotterdam",    "country": "NL", "latitude": 51.9244, "longitude": 4.4777 },
-  "luxembourg":   { "name": "Luxembourg City", "country": "LU", "latitude": 49.6116, "longitude": 6.1319 },
-  "hamburg":      { "name": "Hamburg",      "country": "DE", "latitude": 53.5511, "longitude": 9.9937 },
-  "cologne":      { "name": "Cologne",      "country": "DE", "latitude": 50.9375, "longitude": 6.9603 },
-  "stuttgart":    { "name": "Stuttgart",    "country": "DE", "latitude": 48.7758, "longitude": 9.1829 },
-  "dresden":      { "name": "Dresden",      "country": "DE", "latitude": 51.0504, "longitude": 13.7373 },
-  "bern":         { "name": "Bern",         "country": "CH", "latitude": 46.9480, "longitude": 7.4474 },
-  "geneva":       { "name": "Geneva",       "country": "CH", "latitude": 46.2044, "longitude": 6.1432 },
-  "lucerne":      { "name": "Lucerne",      "country": "CH", "latitude": 47.0502, "longitude": 8.3093, "airport": false },
-  "graz":         { "name": "Graz",         "country": "AT", "latitude": 47.0707, "longitude": 15.4395 },
-  "vaduz":        { "name": "Vaduz",        "country": "LI", "latitude": 47.1410, "longitude": 9.5209, "airport": false },
-  "seville":      { "name": "Seville",      "country": "ES", "latitude": 37.3891, "longitude": -5.9845 },
-  "valencia":     { "name": "Valencia",     "country": "ES", "latitude": 39.4699, "longitude": -0.3763 },
-  "bilbao":       { "name": "Bilbao",       "country": "ES", "latitude": 43.2630, "longitude": -2.9350 },
-  "porto":        { "name": "Porto",        "country": "PT", "latitude": 41.1579, "longitude": -8.6291 },
-  "naples":       { "name": "Naples",       "country": "IT", "latitude": 40.8518, "longitude": 14.2681 },
-  "thessaloniki": { "name": "Thessaloniki", "country": "GR", "latitude": 40.6401, "longitude": 22.9444 },
-  "valletta":     { "name": "Valletta",     "country": "MT", "latitude": 35.8989, "longitude": 14.5146 },
-  "nicosia":      { "name": "Nicosia",      "country": "CY", "latitude": 35.1856, "longitude": 33.3823 },
-  "warsaw":       { "name": "Warsaw",       "country": "PL", "latitude": 52.2297, "longitude": 21.0122 },
-  "gdansk":       { "name": "Gdansk",       "country": "PL", "latitude": 54.3520, "longitude": 18.6466 },
-  "brno":         { "name": "Brno",         "country": "CZ", "latitude": 49.1951, "longitude": 16.6068 },
-  "ljubljana":    { "name": "Ljubljana",    "country": "SI", "latitude": 46.0569, "longitude": 14.5058 },
-  "zagreb":       { "name": "Zagreb",       "country": "HR", "latitude": 45.8150, "longitude": 15.9819 },
-  "bucharest":    { "name": "Bucharest",    "country": "RO", "latitude": 44.4268, "longitude": 26.1025 }
+  "paris": {
+    "name": "Paris",
+    "country": "FR",
+    "latitude": 48.8566,
+    "longitude": 2.3522,
+    "suggestedDayTrips": [
+      "versailles"
+    ]
+  },
+  "london": {
+    "name": "London",
+    "country": "GB",
+    "latitude": 51.5074,
+    "longitude": -0.1278
+  },
+  "amsterdam": {
+    "name": "Amsterdam",
+    "country": "NL",
+    "latitude": 52.3676,
+    "longitude": 4.9041,
+    "suggestedDayTrips": [
+      "delft",
+      "zaanse_schans"
+    ]
+  },
+  "rome": {
+    "name": "Rome",
+    "country": "IT",
+    "latitude": 41.9028,
+    "longitude": 12.4964,
+    "suggestedDayTrips": [
+      "tivoli"
+    ]
+  },
+  "barcelona": {
+    "name": "Barcelona",
+    "country": "ES",
+    "latitude": 41.3874,
+    "longitude": 2.1686
+  },
+  "munich": {
+    "name": "Munich",
+    "country": "DE",
+    "latitude": 48.1351,
+    "longitude": 11.582,
+    "suggestedDayTrips": [
+      "rothenburg"
+    ]
+  },
+  "vienna": {
+    "name": "Vienna",
+    "country": "AT",
+    "latitude": 48.2082,
+    "longitude": 16.3738,
+    "suggestedDayTrips": [
+      "bratislava"
+    ]
+  },
+  "prague": {
+    "name": "Prague",
+    "country": "CZ",
+    "latitude": 50.0755,
+    "longitude": 14.4378
+  },
+  "budapest": {
+    "name": "Budapest",
+    "country": "HU",
+    "latitude": 47.4979,
+    "longitude": 19.0402
+  },
+  "dublin": {
+    "name": "Dublin",
+    "country": "IE",
+    "latitude": 53.3498,
+    "longitude": -6.2603
+  },
+  "berlin": {
+    "name": "Berlin",
+    "country": "DE",
+    "latitude": 52.52,
+    "longitude": 13.405
+  },
+  "florence": {
+    "name": "Florence",
+    "country": "IT",
+    "latitude": 43.7696,
+    "longitude": 11.2558,
+    "suggestedDayTrips": [
+      "pisa",
+      "siena"
+    ]
+  },
+  "venice": {
+    "name": "Venice",
+    "country": "IT",
+    "latitude": 45.4408,
+    "longitude": 12.3155
+  },
+  "lisbon": {
+    "name": "Lisbon",
+    "country": "PT",
+    "latitude": 38.7223,
+    "longitude": -9.1393,
+    "suggestedDayTrips": [
+      "sintra"
+    ]
+  },
+  "madrid": {
+    "name": "Madrid",
+    "country": "ES",
+    "latitude": 40.4168,
+    "longitude": -3.7038,
+    "suggestedDayTrips": [
+      "toledo",
+      "segovia"
+    ]
+  },
+  "zurich": {
+    "name": "Zurich",
+    "country": "CH",
+    "latitude": 47.3769,
+    "longitude": 8.5417
+  },
+  "salzburg": {
+    "name": "Salzburg",
+    "country": "AT",
+    "latitude": 47.8095,
+    "longitude": 13.055,
+    "suggestedDayTrips": [
+      "hallstatt"
+    ]
+  },
+  "innsbruck": {
+    "name": "Innsbruck",
+    "country": "AT",
+    "latitude": 47.2692,
+    "longitude": 11.4041
+  },
+  "lyon": {
+    "name": "Lyon",
+    "country": "FR",
+    "latitude": 45.764,
+    "longitude": 4.8357
+  },
+  "brussels": {
+    "name": "Brussels",
+    "country": "BE",
+    "latitude": 50.8503,
+    "longitude": 4.3517,
+    "suggestedDayTrips": [
+      "bruges"
+    ]
+  },
+  "frankfurt": {
+    "name": "Frankfurt",
+    "country": "DE",
+    "latitude": 50.1109,
+    "longitude": 8.6821
+  },
+  "milan": {
+    "name": "Milan",
+    "country": "IT",
+    "latitude": 45.4642,
+    "longitude": 9.19
+  },
+  "athens": {
+    "name": "Athens",
+    "country": "GR",
+    "latitude": 37.9838,
+    "longitude": 23.7275
+  },
+  "krakow": {
+    "name": "Krakow",
+    "country": "PL",
+    "latitude": 50.0647,
+    "longitude": 19.945
+  },
+  "dubrovnik": {
+    "name": "Dubrovnik",
+    "country": "HR",
+    "latitude": 42.6507,
+    "longitude": 18.0944
+  },
+  "turin": {
+    "name": "Turin",
+    "country": "IT",
+    "latitude": 45.0703,
+    "longitude": 7.6869
+  },
+  "bratislava": {
+    "name": "Bratislava",
+    "country": "SK",
+    "latitude": 48.1486,
+    "longitude": 17.1077
+  },
+  "lugano": {
+    "name": "Lugano",
+    "country": "CH",
+    "latitude": 46.0037,
+    "longitude": 8.9511,
+    "airport": false
+  },
+  "cinque_terre": {
+    "name": "Cinque Terre (via La Spezia)",
+    "country": "IT",
+    "latitude": 44.1024,
+    "longitude": 9.8241,
+    "airport": false,
+    "car": false
+  },
+  "marseille": {
+    "name": "Marseille",
+    "country": "FR",
+    "latitude": 43.2965,
+    "longitude": 5.3698
+  },
+  "nice": {
+    "name": "Nice",
+    "country": "FR",
+    "latitude": 43.7102,
+    "longitude": 7.262
+  },
+  "bordeaux": {
+    "name": "Bordeaux",
+    "country": "FR",
+    "latitude": 44.8378,
+    "longitude": -0.5792
+  },
+  "strasbourg": {
+    "name": "Strasbourg",
+    "country": "FR",
+    "latitude": 48.5734,
+    "longitude": 7.7521
+  },
+  "edinburgh": {
+    "name": "Edinburgh",
+    "country": "GB",
+    "latitude": 55.9533,
+    "longitude": -3.1883
+  },
+  "manchester": {
+    "name": "Manchester",
+    "country": "GB",
+    "latitude": 53.4808,
+    "longitude": -2.2426
+  },
+  "liverpool": {
+    "name": "Liverpool",
+    "country": "GB",
+    "latitude": 53.4084,
+    "longitude": -2.9916
+  },
+  "cardiff": {
+    "name": "Cardiff",
+    "country": "GB",
+    "latitude": 51.4816,
+    "longitude": -3.1791
+  },
+  "cork": {
+    "name": "Cork",
+    "country": "IE",
+    "latitude": 51.8985,
+    "longitude": -8.4756
+  },
+  "bruges": {
+    "name": "Bruges",
+    "country": "BE",
+    "latitude": 51.2093,
+    "longitude": 3.2247,
+    "airport": false
+  },
+  "rotterdam": {
+    "name": "Rotterdam",
+    "country": "NL",
+    "latitude": 51.9244,
+    "longitude": 4.4777
+  },
+  "luxembourg": {
+    "name": "Luxembourg City",
+    "country": "LU",
+    "latitude": 49.6116,
+    "longitude": 6.1319
+  },
+  "hamburg": {
+    "name": "Hamburg",
+    "country": "DE",
+    "latitude": 53.5511,
+    "longitude": 9.9937
+  },
+  "cologne": {
+    "name": "Cologne",
+    "country": "DE",
+    "latitude": 50.9375,
+    "longitude": 6.9603
+  },
+  "stuttgart": {
+    "name": "Stuttgart",
+    "country": "DE",
+    "latitude": 48.7758,
+    "longitude": 9.1829
+  },
+  "dresden": {
+    "name": "Dresden",
+    "country": "DE",
+    "latitude": 51.0504,
+    "longitude": 13.7373,
+    "suggestedDayTrips": [
+      "meissen"
+    ]
+  },
+  "bern": {
+    "name": "Bern",
+    "country": "CH",
+    "latitude": 46.948,
+    "longitude": 7.4474
+  },
+  "geneva": {
+    "name": "Geneva",
+    "country": "CH",
+    "latitude": 46.2044,
+    "longitude": 6.1432
+  },
+  "lucerne": {
+    "name": "Lucerne",
+    "country": "CH",
+    "latitude": 47.0502,
+    "longitude": 8.3093,
+    "airport": false
+  },
+  "graz": {
+    "name": "Graz",
+    "country": "AT",
+    "latitude": 47.0707,
+    "longitude": 15.4395
+  },
+  "vaduz": {
+    "name": "Vaduz",
+    "country": "LI",
+    "latitude": 47.141,
+    "longitude": 9.5209,
+    "airport": false
+  },
+  "seville": {
+    "name": "Seville",
+    "country": "ES",
+    "latitude": 37.3891,
+    "longitude": -5.9845
+  },
+  "valencia": {
+    "name": "Valencia",
+    "country": "ES",
+    "latitude": 39.4699,
+    "longitude": -0.3763
+  },
+  "bilbao": {
+    "name": "Bilbao",
+    "country": "ES",
+    "latitude": 43.263,
+    "longitude": -2.935
+  },
+  "porto": {
+    "name": "Porto",
+    "country": "PT",
+    "latitude": 41.1579,
+    "longitude": -8.6291
+  },
+  "naples": {
+    "name": "Naples",
+    "country": "IT",
+    "latitude": 40.8518,
+    "longitude": 14.2681
+  },
+  "thessaloniki": {
+    "name": "Thessaloniki",
+    "country": "GR",
+    "latitude": 40.6401,
+    "longitude": 22.9444
+  },
+  "valletta": {
+    "name": "Valletta",
+    "country": "MT",
+    "latitude": 35.8989,
+    "longitude": 14.5146
+  },
+  "nicosia": {
+    "name": "Nicosia",
+    "country": "CY",
+    "latitude": 35.1856,
+    "longitude": 33.3823
+  },
+  "warsaw": {
+    "name": "Warsaw",
+    "country": "PL",
+    "latitude": 52.2297,
+    "longitude": 21.0122
+  },
+  "gdansk": {
+    "name": "Gdansk",
+    "country": "PL",
+    "latitude": 54.352,
+    "longitude": 18.6466
+  },
+  "brno": {
+    "name": "Brno",
+    "country": "CZ",
+    "latitude": 49.1951,
+    "longitude": 16.6068
+  },
+  "ljubljana": {
+    "name": "Ljubljana",
+    "country": "SI",
+    "latitude": 46.0569,
+    "longitude": 14.5058
+  },
+  "zagreb": {
+    "name": "Zagreb",
+    "country": "HR",
+    "latitude": 45.815,
+    "longitude": 15.9819
+  },
+  "bucharest": {
+    "name": "Bucharest",
+    "country": "RO",
+    "latitude": 44.4268,
+    "longitude": 26.1025
+  },
+  "versailles": {
+    "name": "Versailles",
+    "country": "FR",
+    "latitude": 48.8049,
+    "longitude": 2.1204,
+    "airport": false
+  },
+  "toledo": {
+    "name": "Toledo",
+    "country": "ES",
+    "latitude": 39.8628,
+    "longitude": -4.0273,
+    "airport": false
+  },
+  "segovia": {
+    "name": "Segovia",
+    "country": "ES",
+    "latitude": 40.9429,
+    "longitude": -4.1088,
+    "airport": false
+  },
+  "rothenburg": {
+    "name": "Rothenburg ob der Tauber",
+    "country": "DE",
+    "latitude": 49.3757,
+    "longitude": 10.1786,
+    "airport": false
+  },
+  "pisa": {
+    "name": "Pisa",
+    "country": "IT",
+    "latitude": 43.7228,
+    "longitude": 10.4017,
+    "airport": false
+  },
+  "siena": {
+    "name": "Siena",
+    "country": "IT",
+    "latitude": 43.3188,
+    "longitude": 11.3308,
+    "airport": false
+  },
+  "tivoli": {
+    "name": "Tivoli",
+    "country": "IT",
+    "latitude": 41.9633,
+    "longitude": 12.7961,
+    "airport": false
+  },
+  "sintra": {
+    "name": "Sintra",
+    "country": "PT",
+    "latitude": 38.7979,
+    "longitude": -9.3817,
+    "airport": false
+  },
+  "delft": {
+    "name": "Delft",
+    "country": "NL",
+    "latitude": 52.0116,
+    "longitude": 4.3571,
+    "airport": false
+  },
+  "zaanse_schans": {
+    "name": "Zaanse Schans",
+    "country": "NL",
+    "latitude": 52.4747,
+    "longitude": 4.8167,
+    "airport": false
+  },
+  "meissen": {
+    "name": "Meissen",
+    "country": "DE",
+    "latitude": 51.1623,
+    "longitude": 13.4718,
+    "airport": false
+  },
+  "hallstatt": {
+    "name": "Hallstatt",
+    "country": "AT",
+    "latitude": 47.5622,
+    "longitude": 13.6493,
+    "airport": false
+  }
 }

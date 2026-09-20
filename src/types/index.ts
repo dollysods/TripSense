@@ -22,6 +22,9 @@ export interface City {
   airport?: boolean;
   /** false = car access effectively prohibited/impractical (Cinque Terre villages). */
   car?: boolean;
+  /** Curated day-trip destinations from this base city (v1.2 Feature 3b),
+   *  surfaced as one-click suggestion chips in the builder. */
+  suggestedDayTrips?: string[];
 }
 
 export type CitiesDatabase = Record<string, City>;
