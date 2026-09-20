@@ -1,9 +1,12 @@
 import { forwardRef } from 'react';
 import type { ItineraryResult } from '../types';
+import type { StopDates } from '../lib/dates';
+import { formatDate } from '../lib/dates';
 import { WAKING_HOURS_PER_DAY, formatHours, formatMin } from '../lib/calc';
 
 interface Props {
   result: ItineraryResult;
+  stopDates?: (StopDates | null)[];
 }
 
 /**
@@ -12,13 +15,22 @@ interface Props {
  * html-to-image serializes computed styles, and fixed pixel sizing
  * must not depend on viewport-relative Tailwind utilities.
  */
-const ShareCard = forwardRef<HTMLDivElement, Props>(function ShareCard({ result }, ref) {
+const ShareCard = forwardRef<HTMLDivElement, Props>(function ShareCard({ result, stopDates }, ref) {
   // Day trips fold into their base city's line and tile.
   const groups: { base: ItineraryResult['perCity'][number]; trips: ItineraryResult['perCity'] }[] = [];
   for (const c of result.perCity) {
     if (c.kind === 'daytrip' && groups.length > 0) groups[groups.length - 1].trips.push(c);
     else groups.push({ base: c, trips: [] });
   }
+
+  // Only real stay rows (not the base-city copy day trips carry), in order.
+  const stays = result.perCity
+    .map((c, i) => (c.kind === 'stay' ? (stopDates?.[i] ?? null) : null))
+    .filter((d): d is StopDates => d !== null);
+  const dateRange =
+    stays.length > 0
+      ? `${formatDate(stays[0].arrival)} – ${formatDate(stays[stays.length - 1].departure)}`
+      : null;
 
   const route = groups
     .map((g) =>
@@ -47,6 +59,7 @@ const ShareCard = forwardRef<HTMLDivElement, Props>(function ShareCard({ result 
       <div>
         <div style={{ fontSize: 30, fontWeight: 700, opacity: 0.9 }}>🚆 TripSense</div>
         <div style={{ fontSize: 40, fontWeight: 800, marginTop: 18, lineHeight: 1.25 }}>{route}</div>
+        {dateRange && <div style={{ fontSize: 20, opacity: 0.8, marginTop: 8 }}>{dateRange}</div>}
       </div>
 
       <div style={{ display: 'flex', gap: 18, flexWrap: 'wrap' }}>

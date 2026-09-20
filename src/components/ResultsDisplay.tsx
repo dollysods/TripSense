@@ -1,12 +1,21 @@
 import type { ItineraryResult } from '../types';
+import type { ReturnComparison, StopDates } from '../lib/dates';
+import { formatStayRange, returnComparisonMessage } from '../lib/dates';
 import { WAKING_HOURS_PER_DAY, formatHours, formatMin } from '../lib/calc';
 
 interface Props {
   result: ItineraryResult;
+  /** Parallel to result.perCity; all-null when no trip start date is set
+   *  (v1.2a, additive — the table renders exactly as before in that case). */
+  stopDates?: (StopDates | null)[];
+  returnComparison?: ReturnComparison | null;
 }
 
-export default function ResultsDisplay({ result }: Props) {
+export default function ResultsDisplay({ result, stopDates, returnComparison }: Props) {
   if (result.perCity.length === 0) return null;
+
+  const showDates = !!stopDates?.some((d) => d !== null);
+  const comparisonMessage = returnComparisonMessage(returnComparison ?? null);
 
   return (
     <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
@@ -14,6 +23,7 @@ export default function ResultsDisplay({ result }: Props) {
         <thead>
           <tr className="border-b border-slate-200 bg-slate-50 text-left text-slate-500">
             <th className="px-4 py-3 font-medium">Destination</th>
+            {showDates && <th className="px-4 py-3 font-medium">Dates</th>}
             <th className="px-4 py-3 font-medium text-right">Nights</th>
             <th className="px-4 py-3 font-medium text-right">Transit in</th>
             <th className="px-4 py-3 font-medium text-right">Waking hours</th>
@@ -23,6 +33,7 @@ export default function ResultsDisplay({ result }: Props) {
         <tbody>
           {result.perCity.map((city, i) => {
             const daytrip = city.kind === 'daytrip';
+            const dates = stopDates?.[i] ?? null;
             return (
               <tr key={`${city.cityId}-${i}`} className="border-b border-slate-100 last:border-0">
                 <td className={`px-4 py-3 font-medium ${daytrip ? 'pl-10 text-slate-600' : 'text-slate-800'}`}>
@@ -30,6 +41,11 @@ export default function ResultsDisplay({ result }: Props) {
                   {city.cityName}
                   {daytrip && <span className="ml-1.5 text-xs font-normal text-indigo-500">day trip</span>}
                 </td>
+                {showDates && (
+                  <td className="px-4 py-3 text-slate-500">
+                    {daytrip ? '—' : dates ? formatStayRange(dates) : '—'}
+                  </td>
+                )}
                 <td className="px-4 py-3 text-right text-slate-600">{daytrip ? '—' : city.nights}</td>
                 <td className="px-4 py-3 text-right text-slate-600">
                   {city.transitInMin > 0
@@ -49,6 +65,7 @@ export default function ResultsDisplay({ result }: Props) {
         <tfoot>
           <tr className="bg-slate-50 font-semibold text-slate-800">
             <td className="px-4 py-3">Total</td>
+            {showDates && <td className="px-4 py-3" />}
             <td className="px-4 py-3 text-right">{result.totalNights}</td>
             <td className="px-4 py-3 text-right text-rose-600">
               {formatMin(result.totalTransitMin)} in transit
@@ -60,10 +77,20 @@ export default function ResultsDisplay({ result }: Props) {
           </tr>
         </tfoot>
       </table>
+      {comparisonMessage && (
+        <p
+          className={`border-t border-slate-100 px-4 py-2.5 text-sm font-medium ${
+            returnComparison?.status === 'over' ? 'text-rose-600' : 'text-slate-600'
+          }`}
+        >
+          {comparisonMessage}
+        </p>
+      )}
       <p className="px-4 py-2.5 text-xs text-slate-400">
         Waking hours = nights × {WAKING_HOURS_PER_DAY}h − transit into the city. Assumes 8h sleep.
         Day trips (↳, transit shown ⇄ round trip) spend their base city's hours — nights stay with
         the base. Times are typical-schedule estimates including door-to-door overhead, not guarantees.
+        {showDates && ' Dates are calendar-day estimates, not tied to a specific departure time.'}
       </p>
     </div>
   );

@@ -1,9 +1,12 @@
 import { useRef, useState } from 'react';
 import type { ItineraryResult } from '../types';
+import type { ReturnComparison, StopDates } from '../lib/dates';
 import ShareCard from './ShareCard';
 
 interface Props {
   result: ItineraryResult;
+  stopDates?: (StopDates | null)[];
+  returnComparison?: ReturnComparison | null;
 }
 
 /**
@@ -11,7 +14,7 @@ interface Props {
  * of the app, so they are dynamic-imported on click and never appear
  * in the initial bundle (the <3s load success criterion depends on this).
  */
-export default function ExportButtons({ result }: Props) {
+export default function ExportButtons({ result, stopDates, returnComparison }: Props) {
   const [busy, setBusy] = useState<'pdf' | 'image' | null>(null);
   const cardRef = useRef<HTMLDivElement>(null);
 
@@ -29,7 +32,9 @@ export default function ExportButtons({ result }: Props) {
         import('@react-pdf/renderer'),
         import('./ItineraryPdf'),
       ]);
-      const blob = await pdf(<ItineraryPdf result={result} />).toBlob();
+      const blob = await pdf(
+        <ItineraryPdf result={result} stopDates={stopDates} returnComparison={returnComparison} />,
+      ).toBlob();
       const url = URL.createObjectURL(blob);
       download(url, 'tripsense-itinerary.pdf');
       URL.revokeObjectURL(url);
@@ -76,7 +81,7 @@ export default function ExportButtons({ result }: Props) {
       </button>
       {/* Offscreen 1200x630 card rendered only for the image export. */}
       <div className="fixed -left-[2400px] top-0" aria-hidden>
-        <ShareCard ref={cardRef} result={result} />
+        <ShareCard ref={cardRef} result={result} stopDates={stopDates} />
       </div>
     </div>
   );

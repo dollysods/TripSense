@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { CitiesDatabase, CityPairsDatabase, Leg, Stop } from './types';
 import { calcItinerary } from './lib/calc';
+import { compareReturnDate, computeStopDates, tripEndDate } from './lib/dates';
 import ItineraryBuilder from './components/ItineraryBuilder';
 import ResultsDisplay from './components/ResultsDisplay';
 import ExportButtons from './components/ExportButtons';
+import TripDatesInput from './components/TripDatesInput';
 import citiesJson from './data/cities.json';
 import dataMeta from './data/meta.json';
 import { Analytics } from "@vercel/analytics/react";
@@ -25,6 +27,11 @@ export default function App() {
   const [cityPairs, setCityPairs] = useState<CityPairsDatabase | null>(null);
   const [loadError, setLoadError] = useState(false);
 
+  // Trip dates (v1.2a) — both optional; '' means unset. Additive layer
+  // on top of the nights-only engine, see lib/dates.ts.
+  const [tripStartDate, setTripStartDate] = useState('');
+  const [returnByDate, setReturnByDate] = useState('');
+
   useEffect(() => {
     fetch(`${import.meta.env.BASE_URL}data/cityPairs.json`)
       .then((res) => {
@@ -41,6 +48,19 @@ export default function App() {
   );
 
   const ready = result !== null && result.perCity.length >= 2;
+
+  const stopDates = useMemo(
+    () => (result ? computeStopDates(result, tripStartDate || undefined) : []),
+    [result, tripStartDate],
+  );
+  const endDate = useMemo(
+    () => (result ? tripEndDate(result, tripStartDate || undefined) : null),
+    [result, tripStartDate],
+  );
+  const returnComparison = useMemo(
+    () => compareReturnDate(endDate, returnByDate || undefined),
+    [endDate, returnByDate],
+  );
 
   return (
     <div className="min-h-screen bg-slate-100">
@@ -61,8 +81,14 @@ export default function App() {
       <Analytics mode="production" />
 
       <main className="mx-auto max-w-3xl space-y-8 px-4 py-8">
-        <section>
-          <h2 className="mb-3 text-lg font-semibold text-slate-800">Your itinerary</h2>
+        <section className="space-y-3">
+          <h2 className="text-lg font-semibold text-slate-800">Your itinerary</h2>
+          <TripDatesInput
+            startDate={tripStartDate}
+            returnByDate={returnByDate}
+            onStartDateChange={setTripStartDate}
+            onReturnByDateChange={setReturnByDate}
+          />
           {cityPairs ? (
             <ItineraryBuilder
               stops={stops}
@@ -87,9 +113,9 @@ export default function App() {
           <section>
             <div className="mb-3 flex items-center justify-between">
               <h2 className="text-lg font-semibold text-slate-800">Your real time budget</h2>
-              <ExportButtons result={result} />
+              <ExportButtons result={result} stopDates={stopDates} returnComparison={returnComparison} />
             </div>
-            <ResultsDisplay result={result} />
+            <ResultsDisplay result={result} stopDates={stopDates} returnComparison={returnComparison} />
           </section>
         )}
       </main>
